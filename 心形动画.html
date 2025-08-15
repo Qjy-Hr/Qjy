@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ℒ❁Ѵ℮    ~上天堂的感觉</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+            position: relative;
+            filter: blur(0.5px);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            z-index: 10;
+            animation: fadeIn 1.5s ease-out;
+        }
+        
+        h1 {
+            color: #ff6b6b;
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            text-shadow: 0 0 15px rgba(255, 107, 107, 0.7);
+            letter-spacing: 2px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .subtitle {
+            color: #f8f9fa;
+            font-size: 1.2rem;
+            max-width: 600px;
+            line-height: 1.6;
+            opacity: 0.9;
+            animation: slideUp 1s ease-out;
+        }
+        
+        .canvas-container {
+            position: relative;
+            margin: 20px 0;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            animation: scaleIn 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        canvas {
+            display: block;
+        }
+        
+        /* 添加的签名样式 - 调整为1.5倍 */
+        .signature {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 120px; /* 1.5倍大小 (80px * 1.5 = 120px) */
+            height: auto;
+            z-index: 5;
+            opacity: 0.85;
+            pointer-events: none;
+            animation: signature-pulse 3s infinite ease-in-out;
+            transform-origin: bottom right; /* 从右下角缩放 */
+        }
+        
+        /* 签名动画 */
+        @keyframes signature-pulse {
+            0% { transform: scale(1); opacity: 0.85; }
+            50% { transform: scale(1.08); opacity: 1; } /* 稍微增强缩放效果 */
+            100% { transform: scale(1); opacity: 0.85; }
+        }
+        
+        /* 动画效果 */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes scaleIn {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        /* 装饰元素 */
+        .decoration {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .particle {
+            position: absolute;
+            background: rgba(255, 107, 107, 0.6);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>💕𓂃𝐼 𝑙𝑜𝑣𝑒 𝑦𝑜𝑢𓂃💕</h1>
+	</div>
+    
+    <div class="canvas-container">
+        <canvas id="heart" width="600" height="600"></canvas>
+        <!-- 添加的签名元素 - 调整为1.5倍 -->
+        <img src="https://i.postimg.cc/x1pxg1c8/image.jpg" class="signature" alt="个性签名">
+    </div>
+    
+    <!-- 背景装饰粒子 -->
+    <div class="decoration" id="decoration"></div>
+    
+    <!-- 音频元素 - 隐藏 -->
+    <audio id="bgMusic" loop autoplay>
+        <source src="https://link.hhtjim.com/163/2719001686.mp3" type="audio/mpeg">
+        您的浏览器不支持音频元素。
+    </audio>
+    
+    <script>
+        // 获取Canvas元素和上下文
+        var canvas = document.getElementById("heart");
+        var context = canvas.getContext("2d");
+        
+        // 设置Canvas尺寸
+        canvas.width = 600;
+        canvas.height = 600;
+        
+        // 变换坐标系：将原点移到中心，Y轴向上
+        context.translate(canvas.width / 2, canvas.height / 2);
+        context.scale(1, -1);
+        
+        // 粒子构造函数
+        function Particle(t, r, j, ws) {
+            this.trans = t;
+            this.rs = r;
+            this.ws = ws;
+            this.index = j;
+            this.x = this.trans * this.ws * Math.sin(this.index) * Math.sin(this.index) * Math.sin(this.index);
+            this.y = this.trans * (16 * Math.cos(this.index) - 5 * Math.cos(2 * this.index) - 2 * Math.cos(3 * this.index) - Math.cos(4 * this.index));
+        }
+        
+        // 动画参数
+        let ws = 18;
+        let hs = 16;
+        let wsSpeed = 0.05;
+        let hsSpeed = 0.05;
+        let speed = 1;
+        
+        // 粒子数组 - 增加到3600个粒子
+        let wqs = []; // 外圈
+        let nqs = []; // 内圈
+        let hxz = []; // 核心轴
+        let hxz2 = []; // 核心轴2
+        let dc = []; // 顶层动态粒子
+        
+        let animationId = null;
+        
+        // 初始化粒子数据 - 总粒子数3600
+        function initParticles() {
+            wqs = [];
+            nqs = [];
+            hxz = [];
+            hxz2 = [];
+            dc = [];
+            
+            // 创建外圈粒子 (1200个)
+            for (let j = 0; j < 1200; j += speed) {
+                let trans = 9 + Math.random() * 2.5;
+                let size = Math.random() * 2;
+                let particle = new Particle(trans, size, j, ws);
+                wqs.push(particle);
+            }
+            
+            // 创建内圈粒子 (1000个)
+            for (let j = 0; j < 1000; j += speed) {
+                let trans = 7 + Math.random() * 5;
+                let size = Math.random() * 2.5;
+                let particle = new Particle(trans, size, j, ws);
+                nqs.push(particle);
+            }
+            
+            // 创建核心轴粒子 (1000个)
+            for (let j = 0; j < 1000; j += speed) {
+                let trans = 11 + Math.random() * 2;
+                let size = Math.random() * 3.5;
+                let particle = new Particle(trans, size, j, ws);
+                hxz.push(particle);
+            }
+            
+            // 创建核心轴2粒子 (400个)
+            for (let j = 0; j < 400; j += speed) {
+                let trans = 0 + Math.random() * 2.7;
+                let size = Math.random() * 2.5;
+                let particle = new Particle(trans, size, j, ws);
+                hxz2.push(particle);
+            }
+        }
+        
+        // 绘制动画帧
+        function draw() {
+            // 清除画布
+            context.clearRect(-canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height);
+            
+            // 更新心形尺寸参数（脉动效果）
+            ws += wsSpeed;
+            if (ws < 16) wsSpeed *= -1;
+            else if (ws > 18) wsSpeed *= -1;
+            
+            hs += hsSpeed;
+            if (hs < 14) hsSpeed *= -1;
+            else if (hs > 16) hsSpeed *= -1;
+            
+            // 绘制核心轴粒子
+            drawParticles(hxz, '#ff6b6b');
+            
+            // 绘制核心轴2粒子
+            drawParticles(hxz2, '#ff8e8e');
+            
+            // 绘制内圈粒子
+            drawParticles(nqs, '#ff4d4d');
+            
+            // 绘制外圈粒子
+            drawParticles(wqs, '#ff1a1a');
+            
+            // 创建并绘制顶层动态粒子
+            dc = [];
+            for (let j = 0; j < 300; j += speed) {
+                let trans = 1 + Math.random() * 20;
+                let size = Math.random() * 2;
+                let particle = new Particle(trans, size, j, ws);
+                dc.push(particle);
+            }
+            drawParticles(dc, '#ffffff');
+            
+            animationId = requestAnimationFrame(draw);
+        }
+        
+        // 绘制粒子数组
+        function drawParticles(particles, color) {
+            context.fillStyle = color;
+            
+            particles.forEach(v => {
+                const x = v.trans * ws * Math.sin(v.index) * Math.sin(v.index) * Math.sin(v.index);
+                const y = v.trans * (hs * Math.cos(v.index) - 5 * Math.cos(2 * v.index) - 2 * Math.cos(3 * v.index) - Math.cos(4 * v.index));
+                
+                context.beginPath();
+                context.arc(x, y, v.rs, 0, Math.PI * 2);
+                context.fill();
+                context.closePath();
+            });
+        }
+        
+        // 创建背景装饰粒子
+        function createBackgroundParticles() {
+            const container = document.getElementById('decoration');
+            const particleCount = 60;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('particle');
+                
+                // 随机属性
+                const size = Math.random() * 6 + 2;
+                const posX = Math.random() * 100;
+                const posY = Math.random() * 100;
+                const opacity = Math.random() * 0.5 + 0.1;
+                const animationDuration = Math.random() * 15 + 10;
+                
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                particle.style.left = `${posX}%`;
+                particle.style.top = `${posY}%`;
+                particle.style.opacity = opacity;
+                particle.style.animation = `float ${animationDuration}s infinite linear`;
+                
+                // 添加漂浮动画
+                const style = document.createElement('style');
+                style.textContent = `
+                    @keyframes float {
+                        0% { transform: translate(0, 0); }
+                        50% { transform: translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 - 50}px); }
+                        100% { transform: translate(0, 0); }
+                    }
+                `;
+                document.head.appendChild(style);
+                
+                container.appendChild(particle);
+            }
+        }
+
+        // 自动播放音乐
+        function playMusic() {
+            const bgMusic = document.getElementById('bgMusic');
+            bgMusic.volume = 0.5; // 设置音量
+            
+            // 尝试自动播放
+            const playPromise = bgMusic.play();
+            
+            // 如果自动播放被阻止，则在用户交互后播放
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    // 添加点击事件监听器，当用户首次点击时播放音乐
+                    document.body.addEventListener('click', function initMusic() {
+                        bgMusic.play();
+                        document.body.removeEventListener('click', initMusic);
+                    }, { once: true });
+                });
+            }
+        }
+        
+        // 页面加载完成后初始化
+        window.addEventListener('load', function() {
+            initParticles();
+            draw();
+            createBackgroundParticles();
+            playMusic();
+        });
+    </script>
+</body>
+</html>
